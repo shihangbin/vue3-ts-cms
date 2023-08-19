@@ -38,8 +38,16 @@
 16. `vite.config.ts`：给 vite 做配置
 
 ## src 结构
+
 1. assets：静态文件
-2. 
+2. components：组件
+3. hooks：功能
+4. router：路由
+5. store：状态管理
+6. utils：工具
+7. views：页面
+8. App.vue：模板
+9. main.ts：入口文件
 
 ## 配置
 
@@ -53,6 +61,60 @@ declare module '*.vue' {
   export default component
 }
 ```
+
 2. 安装插件
 
 ![](https://img.xbin.cn/images/2023/08/18-20-12-9f6ed0.png)
+
+3. 安装 scss
+
+```sh
+npm install -D sass
+```
+
+## css 重置
+
+```sh
+npm i normalize.css
+```
+
+```ts
+// main.ts
+import 'normalize.css'
+```
+
+创建 reset.css 和 common.css
+
+```ts
+// index.css
+@import './reset.css';
+@import './common.css';
+
+// reset.css
+// https://github.com/willworks
+
+// common.css
+```
+
+## router 配置
+
+```sh
+# 安装 router
+npm i vue-router
+```
+
+```ts
+// routet => index.ts
+import { createRouter, createWebHashHistory } from 'vue-router'
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes: []
+})
+
+export default router
+```
+
+```ts
+createApp(App).use(router).mount('#app')
+```

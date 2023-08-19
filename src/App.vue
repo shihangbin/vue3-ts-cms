@@ -1,14 +1,13 @@
-<script lang="ts" setup>
-const info = {
-  name: 'sj',
-  age: 19
-}
-</script>
+<script lang="ts" setup></script>
 
 <template>
   <div class="app">
-    <h2>app</h2>
+    <h2><span>app</span></h2>
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+h2 {
+  height: 30px;
+}
+</style>
