@@ -2,12 +2,10 @@
 
 <template>
   <div class="app">
-    <h2><span>app</span></h2>
+    <router-link to="/main">main</router-link>
+    <router-link to="/login">login</router-link>
+    <router-view></router-view>
   </div>
 </template>
 
-<style lang="scss" scoped>
-h2 {
-  height: 30px;
-}
-</style>
+<style lang="scss" scoped></style>
