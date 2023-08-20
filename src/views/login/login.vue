@@ -1,4 +1,14 @@
-<script lang="ts" setup></script>
+<script lang="ts" setup>
+import { sjRequest } from '@/service'
+
+sjRequest
+  .get({
+    url: '/goods?pagenum=1&pagesize=2'
+  })
+  .then((res) => {
+    console.log(res)
+  })
+</script>
 
 <template>
   <div class="login">

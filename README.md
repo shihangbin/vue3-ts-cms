@@ -207,38 +207,50 @@ npm i axios
 ```
 
 ```ts
-// (Request) => index.ts
+// config => index.ts
+export const BASE_URL = 'http://codercba.com:8000'
+export const TIMEOUT = 10000
+```
+
+```ts
+// request => index.ts
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 import type { SJRequestConfig } from './type'
 
+// 拦截器: 蒙版 loading | token | 修改配置等
+
 class SJRequest {
   instance: AxiosInstance
 
-  // request实例 => axios的实例
+  // requset 实例 => Axios 实例
   constructor(config: SJRequestConfig) {
     this.instance = axios.create(config)
 
-    // 每个instance实例都添加拦截器
+    // 每个 instance 实例都添加拦截器
     this.instance.interceptors.request.use(
       (config) => {
         // loading/token
+        console.log('全局请求成功的拦截')
         return config
       },
       (err) => {
+        console.log('全局请求失败的拦截')
         return err
       }
     )
     this.instance.interceptors.response.use(
       (res) => {
+        console.log('全局响应成功的拦截')
         return res.data
       },
       (err) => {
+        console.log('全局响应失败的拦截')
         return err
       }
     )
 
-    // 针对特定的SJRequest实例添加拦截器
+    // 针对特定的 SJRequest 实例添加拦截器
     this.instance.interceptors.request.use(
       config.interceptors?.requestSuccessFn,
       config.interceptors?.requestFailureFn
@@ -249,41 +261,21 @@ class SJRequest {
     )
   }
 
-  // 封装网络请求的方法
-  // T => IHomeData
-  request<T = any>(config: SJRequestConfig<T>) {
-    // 单次请求的成功拦截处理
-    if (config.interceptors?.requestSuccessFn) {
-      config = config.interceptors.requestSuccessFn(config)
-    }
-
-    // 返回Promise
-    return new Promise<T>((resolve, reject) => {
-      this.instance
-        .request<any, T>(config)
-        .then((res) => {
-          // 单词响应的成功拦截处理
-          if (config.interceptors?.responseSuccessFn) {
-            res = config.interceptors.responseSuccessFn(res)
-          }
-          resolve(res)
-        })
-        .catch((err) => {
-          reject(err)
-        })
-    })
+  // 封装网络请求
+  request(config: SJRequestConfig) {
+    return this.instance.request(config)
   }
 
-  get<T = any>(config: SJRequestConfig<T>) {
+  get(config: SJRequestConfig) {
     return this.request({ ...config, method: 'GET' })
   }
-  post<T = any>(config: SJRequestConfig<T>) {
+  post(config: SJRequestConfig) {
     return this.request({ ...config, method: 'POST' })
   }
-  delete<T = any>(config: SJRequestConfig<T>) {
+  delete(config: SJRequestConfig) {
     return this.request({ ...config, method: 'DELETE' })
   }
-  patch<T = any>(config: SJRequestConfig<T>) {
+  patch(config: SJRequestConfig) {
     return this.request({ ...config, method: 'PATCH' })
   }
 }
@@ -295,15 +287,43 @@ export default SJRequest
 // Request => type.ts
 import type { AxiosRequestConfig, AxiosResponse } from 'axios'
 
-// 针对AxiosRequestConfig配置进行扩展
-export interface SJInterceptors<T = AxiosResponse> {
+// 针对 AxiosRequestConfig 进行扩展
+export interface SJInterceptors {
   requestSuccessFn?: (config: AxiosRequestConfig) => any
   requestFailureFn?: (err: any) => any
-  responseSuccessFn?: (res: T) => T
+  responseSuccessFn?: (res: AxiosResponse) => AxiosResponse
   responseFailureFn?: (err: any) => any
 }
-
-export interface SJRequestConfig<T = AxiosResponse> extends AxiosRequestConfig {
-  interceptors?: SJInterceptors<T>
+export interface SJRequestConfig extends AxiosRequestConfig {
+  interceptors?: SJInterceptors
 }
+```
+
+```ts
+// index.ts
+import { BASE_URL, TIMEOUT } from './config'
+import SJRequest from './request'
+
+export const sjRequest = new SJRequest({
+  baseURL: BASE_URL,
+  timeout: TIMEOUT,
+  interceptors: {
+    requestSuccessFn: (config) => {
+      console.log('精细请求成功的拦截')
+      return config
+    },
+    requestFailureFn: (err) => {
+      console.log('精细请求失败的拦截')
+      return err
+    },
+    responseSuccessFn: (res) => {
+      console.log('精细响应成功的拦截')
+      return res
+    },
+    responseFailureFn: (err) => {
+      console.log('精细响应失败的拦截')
+      return err
+    }
+  }
+})
 ```
