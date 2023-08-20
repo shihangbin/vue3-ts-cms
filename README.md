@@ -27,28 +27,30 @@
 5. `.eslintrc.cjs`：
 6. `.gitignore`：忽略文件
 7. `.prettierrc.json`：格式化配置
-8. `env.d.ts`：类型声明文件
-9. `index.html`：模板文件
-10. `package-lock.json`：包锁定版本
-11. `package.json`：包需要文件和版本
-12. `README.md`：文档
-13. `tsconfig.app.json`：ts 指定待编译文件和定义编译选项
-14. `tsconfig.json`：ts 文件配置引入(不推荐更改)
-15. `tsconfig.node.json`：ssr 在 node 环境下运行的配置
-16. `vite.config.ts`：给 vite 做配置
+8. `auto-imports.d.ts`：Element 按需引入自动生成
+9. `components.d.ts`：Element 按需引入自动生成
+10. `env.d.ts`：类型声明文件
+11. `index.html`：模板文件
+12. `package-lock.json`：包锁定版本
+13. `package.json`：包需要文件和版本
+14. `README.md`：文档
+15. `tsconfig.app.json`：ts 指定待编译文件和定义编译选项
+16. `tsconfig.json`：ts 文件配置引入(不推荐更改)
+17. `tsconfig.node.json`：ssr 在 node 环境下运行的配置
+18. `vite.config.ts`：给 vite 做配置
 
 ## src 结构
 
-1. assets：静态文件
-2. components：组件
-3. hooks：功能
-4. router：路由
-5. service：网络请求
-6. store：状态管理
-7. utils：工具
-8. views：页面
-9. App.vue：模板
-10. main.ts：入口文件
+1. `assets`：静态文件
+2. `components`：组件
+3. `hooks`：功能
+4. `router`：路由
+5. `service`：网络请求
+6. `store`：状态管理
+7. `utils`：工具
+8. `views`：页面
+9. `App.vue`：模板
+10. `main.ts`：入口文件
 
 ## 配置
 
@@ -206,10 +208,23 @@ const changeCounter = () => {
 npm i axios
 ```
 
+- import.meta.env.MODE: {string} 应用运行的模式。
+- import.meta.env.PROD: {boolean} 应用是否运行在生产环境。
+- import.meta.env.DEV: {boolean} 应用是否运行在开发环境 (永远与 import.meta.env.PROD相反)。
+- import.meta.env.SSR: {boolean} 应用是否运行在 server 上。
+
 ```ts
 // config => index.ts
-export const BASE_URL = 'http://codercba.com:8000'
+let BASE_URL = ''
+// 生产环境 开发环境
+if (import.meta.env.DEV) {
+  BASE_URL = 'http://vue-shop-api-t.itheima.net/api/private/v1'
+} else {
+  BASE_URL = 'http://vue-shop-api-t.itheima.net/api/private/v1'
+}
+
 export const TIMEOUT = 10000
+export { BASE_URL }
 ```
 
 ```ts
@@ -326,4 +341,56 @@ export const sjRequest = new SJRequest({
     }
   }
 })
+```
+
+## Element-Plus 集成
+
+```sh
+# 安装
+npm install element-plus --save
+# 按需引入插件安装
+npm install -D unplugin-vue-components unplugin-auto-import
+```
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+
+export default defineConfig({
+  // ...
+  plugins: [
+    // ...
+    AutoImport({
+      resolvers: [ElementPlusResolver()]
+    }),
+    Components({
+      resolvers: [ElementPlusResolver()]
+    })
+  ]
+})
+```
+
+```json
+// tsconfig.app.json
+{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "include": [
+    "env.d.ts",
+    "src/**/*",
+    "src/**/*.vue",
+    "auto-imports.d.ts",
+    "components.d.ts"
+  ],
+  "exclude": ["src/**/__tests__/*"],
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
 ```
