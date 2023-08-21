@@ -1,27 +1,20 @@
 <script lang="ts" setup>
-import { sjRequest } from '@/service'
-
-sjRequest
-  .get({
-    url: '/goods/category/count'
-  })
-  .then((res) => {
-    console.log(res)
-  })
+import LoginPanle from './components/LoginPanle.vue'
 </script>
 
 <template>
   <div class="login">
-    <h2>login</h2>
-    <el-row class="mb-4">
-      <el-button type="default">Default</el-button>
-      <el-button type="primary">Primary</el-button>
-      <el-button type="success">Success</el-button>
-      <el-button type="info">Info</el-button>
-      <el-button type="warning">Warning</el-button>
-      <el-button type="danger">Danger</el-button>
-    </el-row>
+    <login-panle></login-panle>
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: url('@/assets/img/login-bg.svg');
+}
+</style>

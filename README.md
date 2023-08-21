@@ -43,14 +43,15 @@
 
 1. `assets`：静态文件
 2. `components`：组件
-3. `hooks`：功能
-4. `router`：路由
-5. `service`：网络请求
-6. `store`：状态管理
-7. `utils`：工具
-8. `views`：页面
-9. `App.vue`：模板
-10. `main.ts`：入口文件
+3. `global`：全局工具
+4. `hooks`：功能
+5. `router`：路由
+6. `service`：网络请求
+7. `store`：状态管理
+8. `utils`：工具
+9. `views`：页面
+10. `App.vue`：模板
+11. `main.ts`：入口文件
 
 ## 配置
 
@@ -373,8 +374,9 @@ export default defineConfig({
 })
 ```
 
+tsconfig.app.json
+
 ```json
-// tsconfig.app.json
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": [
@@ -393,4 +395,32 @@ export default defineConfig({
     }
   }
 }
+```
+
+## icon 图标
+
+```sh
+# 安装
+npm install @element-plus/icons-vue
+```
+
+```ts
+// global => register-icons.ts
+// 如果您正在使用CDN引入，请删除下面一行。
+import type { App } from 'vue'
+// 如果您正在使用CDN引入，请删除下面一行。
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+
+function registerIcons(app: App<Element>) {
+  for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+    app.component(key, component)
+  }
+}
+
+export default registerIcons
+```
+
+```ts
+// main.ts
+createApp(App).use(router).use(pinia).use(registerIcons).mount('#app')
 ```
