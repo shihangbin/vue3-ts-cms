@@ -1,12 +1,16 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
+import PanelAccount from './PanelAccount.vue'
+import PanelPhone from './PanelPhone.vue'
 
-const isRememberPwd = ref(false)
+const isRememberPwd = ref<boolean>(false)
+// 拿到组件实例的返回值类型
+const accountRef = ref<InstanceType<typeof PanelAccount>>()
+const activeName = ref<string>('account')
 
-const activeName = ref('account')
-const handeleLogin = () => {
+const handlerLogin = () => {
   if (activeName.value === 'account') {
-    console.log('账号登录')
+    accountRef.value?.loginAction()
   } else {
     console.log('手机登录')
   }
@@ -25,8 +29,7 @@ const handeleLogin = () => {
               <span>账号登录</span>
             </div>
           </template>
-          <div class="account">账号</div>
-          <div class="password">密码</div>
+          <panel-account ref="accountRef"></panel-account>
         </el-tab-pane>
         <el-tab-pane name="phone">
           <template #label>
@@ -35,8 +38,7 @@ const handeleLogin = () => {
               <span>手机登录</span>
             </div>
           </template>
-          <div class="account">账号</div>
-          <div class="password">密码</div>
+          <panel-phone></panel-phone>
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -45,7 +47,7 @@ const handeleLogin = () => {
       <el-link type="primary">忘记密码</el-link>
     </div>
     <div class="login-btn">
-      <el-button class="btn" type="primary" size="large" @click="handeleLogin"
+      <el-button class="btn" type="primary" size="large" @click="handlerLogin"
         >立即登录</el-button
       >
     </div>
@@ -57,7 +59,7 @@ const handeleLogin = () => {
   width: 320px;
   .title {
     text-align: center;
-    margin-bottom: 15px;
+    margin-bottom: 25px;
     font-size: 30px;
     font-weight: 700;
     color: #000;

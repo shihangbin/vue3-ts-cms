@@ -424,3 +424,7 @@ export default registerIcons
 // main.ts
 createApp(App).use(router).use(pinia).use(registerIcons).mount('#app')
 ```
+
+```html
+<el-icon><Iphone /></el-icon>
+```
