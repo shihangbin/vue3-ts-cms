@@ -1,18 +1,20 @@
 <script lang="ts" setup>
-import { reactive } from 'vue'
-import type { FormRules } from 'element-plus'
+import { reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { FormRules, ElForm } from 'element-plus'
+import { useLoginStore } from '@/store/login/login'
 
 interface IRuleForm {
-  accountID: string
+  name: string
   password: string
 }
 const account = reactive<IRuleForm>({
-  accountID: '',
+  name: '',
   password: ''
 })
 
 const accountRules: FormRules = {
-  accountID: [
+  name: [
     { required: true, message: '必须输入账号~', trigger: 'blur' },
     {
       pattern: /^[a-z0-9]{6,20}$/,
@@ -30,8 +32,21 @@ const accountRules: FormRules = {
   ]
 }
 
+const formRef = ref<InstanceType<typeof ElForm>>()
+const loginStore = useLoginStore()
 const loginAction = () => {
-  console.log('panel', account.accountID, account.password)
+  formRef.value?.validate((valid) => {
+    if (valid) {
+      // 1.获取用户账号密码
+      const name = account.name
+      const password = account.password
+
+      // 2.向服务器发送请求
+      loginStore.loginAccountAction({ name, password })
+    } else {
+      ElMessage.error('验证失败')
+    }
+  })
 }
 
 defineExpose({
@@ -46,9 +61,10 @@ defineExpose({
       label-width="60px"
       size="large"
       :rules="accountRules"
+      ref="formRef"
     >
-      <el-form-item label="账号" prop="accountID">
-        <el-input v-model="account.accountID" />
+      <el-form-item label="账号" prop="name">
+        <el-input v-model="account.name" />
       </el-form-item>
       <el-form-item label="密码" prop="password">
         <el-input show-password v-model="account.password" />

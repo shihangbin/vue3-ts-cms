@@ -32,7 +32,7 @@ class SJRequest {
 
     // 针对特定的 SJRequest 实例添加拦截器
     this.instance.interceptors.request.use(
-      config.interceptors?.requestSuccessFn,
+      config.interceptors?.requestSuccessFn as any,
       config.interceptors?.requestFailureFn
     )
     this.instance.interceptors.response.use(
