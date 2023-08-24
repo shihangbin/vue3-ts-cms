@@ -1,17 +1,20 @@
 <script lang="ts" setup>
-import { useCounterSotre } from '@/store/counter'
+import { LOGIN_TOKEN } from '@/global/constants'
+import router from '@/router'
+import { localCache } from '@/utils/cache'
 
-const counterStote = useCounterSotre()
-
-const changeCounter = () => {
-  counterStote.changeCounterAction(999)
+const onExit = () => {
+  // 删除token
+  localCache.removeCache(LOGIN_TOKEN)
+  // 跳回到login
+  router.push('/login')
 }
 </script>
 
 <template>
   <div class="main">
-    <h2>main:{{ counterStote.counter }}--{{ counterStote.doubleCounter }}</h2>
-    <button @click="changeCounter">修改counter</button>
+    <h2>main</h2>
+    <el-button type="primary" @click="onExit">退出登录</el-button>
   </div>
 </template>
 

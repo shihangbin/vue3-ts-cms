@@ -428,3 +428,15 @@ createApp(App).use(router).use(pinia).use(registerIcons).mount('#app')
 ```html
 <el-icon><Iphone /></el-icon>
 ```
+
+## postman
+
+![](https://img.xbin.cn/images/2023/08/24-15-06-a2871b.png)
+
+![](https://img.xbin.cn/images/2023/08/24-15-11-a82a9e.png)
+
+![](https://img.xbin.cn/images/2023/08/24-15-09-3548f6.png)
+
+![](https://img.xbin.cn/images/2023/08/24-15-13-e0f281.png)
+
+![](https://img.xbin.cn/images/2023/08/24-15-13-cf5d16.png)
