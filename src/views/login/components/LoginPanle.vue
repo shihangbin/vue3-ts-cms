@@ -1,10 +1,16 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import PanelAccount from './PanelAccount.vue'
 import PanelPhone from './PanelPhone.vue'
 import { localCache } from '@/utils/cache'
 
-const isRememberPwd = ref<boolean>(true)
+const isRememberPwd = ref<boolean>(
+  localCache.getCache('isRememberPwd') ?? false
+)
+watch(isRememberPwd, (newValue) => {
+  localCache.removeCache('isRememberPwd')
+  localCache.setCache('isRememberPwd', newValue)
+})
 // 拿到组件实例的返回值类型
 const accountRef = ref<InstanceType<typeof PanelAccount>>()
 const activeName = ref<string>('account')

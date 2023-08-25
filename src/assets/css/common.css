@@ -1,0 +1,5 @@
+:root {
+  .el-header {
+    --el-header-padding: 0;
+  }
+}

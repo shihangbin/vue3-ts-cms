@@ -43,7 +43,7 @@ const loginAction = (isRememberPwd: boolean) => {
       const password = account.password
 
       // 2.向服务器发送请求
-      loginStore.loginAccountAction({ name, password }).then((res) => {
+      loginStore.loginAccountAction({ name, password }).then(() => {
         // 3.判断是否需要记住密码
         if (isRememberPwd) {
           localCache.setCache(CACHE_NAME, name)

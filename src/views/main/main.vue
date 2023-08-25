@@ -1,21 +1,57 @@
 <script lang="ts" setup>
-import { LOGIN_TOKEN } from '@/global/constants'
-import router from '@/router'
-import { localCache } from '@/utils/cache'
+import { ref } from 'vue'
+import MainMenu from '@/components/MainMenu/MainMenu.vue'
+import MainHeader from '@/components/MainHeader/MainHeader.vue'
 
-const onExit = () => {
-  // 删除token
-  localCache.removeCache(LOGIN_TOKEN)
-  // 跳回到login
-  router.push('/login')
+// 处理main-header 中的折叠变化
+const isCollapse = ref(false)
+const onFoldChange = (isFold: boolean) => {
+  isCollapse.value = isFold
 }
 </script>
 
 <template>
   <div class="main">
-    <h2>main</h2>
-    <el-button type="primary" @click="onExit">退出登录</el-button>
+    <el-container class="main-content">
+      <el-aside class="aside" :width="isCollapse ? '64px' : '210px'">
+        <main-menu :is-fold="isCollapse" />
+      </el-aside>
+      <el-container class="content">
+        <el-header class="header" height="50px">
+          <main-header @fold-change="onFoldChange" />
+        </el-header>
+        <el-main class="main">Main</el-main>
+      </el-container>
+    </el-container>
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.main {
+  height: 100%;
+  .main-content {
+    height: 100%;
+    background-color: #eff1f5;
+    .aside {
+      overflow-x: hidden;
+      overflow-y: auto;
+      background-color: #0c1f36;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      transition: width 0.5s ease;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+    .content {
+      .header {
+        background-color: #fff;
+      }
+      // .main {
+      //   background-color: #fe8076;
+      // }
+    }
+  }
+}
+</style>

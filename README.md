@@ -440,3 +440,203 @@ createApp(App).use(router).use(pinia).use(registerIcons).mount('#app')
 ![](https://img.xbin.cn/images/2023/08/24-15-13-e0f281.png)
 
 ![](https://img.xbin.cn/images/2023/08/24-15-13-cf5d16.png)
+
+## login
+
+### 路由守卫
+
+![](https://img.xbin.cn/images/2023/08/24-17-11-2852dc.png)
+
+```ts
+// 导航守卫
+router.beforeEach((to, from) => {
+  const token = localCache.getCache(LOGIN_TOKEN)
+  if (to.path === '/main' && !token) {
+    return '/login'
+  }
+})
+```
+
+### cache 封装
+
+```ts
+enum CacheType {
+  Local,
+  Session
+}
+
+class Cache {
+  storage: Storage
+
+  constructor(type: CacheType) {
+    this.storage = type === CacheType.Local ? localStorage : sessionStorage
+  }
+
+  setCache(key: string, value: any) {
+    if (value) {
+      this.storage.setItem(key, JSON.stringify(value))
+    }
+  }
+
+  getCache(key: string) {
+    const value = this.storage.getItem(key)
+    if (value) {
+      return JSON.parse(value)
+    }
+  }
+
+  removeCache(key: string) {
+    this.storage.removeItem(key)
+  }
+
+  clear() {
+    this.storage.clear()
+  }
+}
+const localCache = new Cache(CacheType.Local)
+const sessionCache = new Cache(CacheType.Session)
+
+export { localCache, sessionCache }
+```
+
+### 记住密码(布尔值的记录)
+
+![](https://img.xbin.cn/images/2023/08/24-17-09-933bbe.png)
+
+![](https://img.xbin.cn/images/2023/08/24-17-14-ca73e1.png)
+
+```ts
+const isRememberPwd = ref<boolean>(
+  localCache.getCache('isRememberPwd') ?? false
+)
+watch(isRememberPwd, (newValue) => {
+  localCache.removeCache('isRememberPwd')
+  localCache.setCache('isRememberPwd', newValue)
+})
+```
+
+### 账号登录
+
+![](https://img.xbin.cn/images/2023/08/24-17-10-3cfec5.png)
+
+```ts
+// login.vue
+import { reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { FormRules, ElForm } from 'element-plus'
+import { useLoginStore } from '@/store/login/login'
+import type { IAccount } from '@/types'
+import { localCache } from '@/utils/cache'
+
+const CACHE_NAME = 'name'
+const CACHE_PASSWORD = 'password'
+
+const account = reactive<IAccount>({
+  name: localCache.getCache(CACHE_NAME) ?? '',
+  password: localCache.getCache(CACHE_PASSWORD) ?? ''
+})
+
+const accountRules: FormRules = {
+  name: [
+    { required: true, message: '必须输入账号~', trigger: 'blur' },
+    {
+      pattern: /^[a-z0-9]{6,20}$/,
+      message: '必须6~20位数字或字母组成~',
+      trigger: 'blur'
+    }
+  ],
+  password: [
+    { required: true, message: '必须输入密码~', trigger: 'blur' },
+    {
+      pattern: /^[a-z0-9]{6,20}$/,
+      message: '必须要6位以上的字母或数字',
+      trigger: 'blur'
+    }
+  ]
+}
+
+const formRef = ref<InstanceType<typeof ElForm>>()
+const loginStore = useLoginStore()
+const loginAction = (isRememberPwd: boolean) => {
+  formRef.value?.validate((valid) => {
+    if (valid) {
+      // 1.获取用户账号密码
+      const name = account.name
+      const password = account.password
+
+      // 2.向服务器发送请求
+      loginStore.loginAccountAction({ name, password }).then(() => {
+        // 3.判断是否需要记住密码
+        if (isRememberPwd) {
+          localCache.setCache(CACHE_NAME, name)
+          localCache.setCache(CACHE_PASSWORD, password)
+        } else {
+          localCache.removeCache(CACHE_NAME)
+          localCache.removeCache(CACHE_PASSWORD)
+        }
+      })
+    } else {
+      ElMessage.error('验证失败')
+    }
+  })
+}
+
+defineExpose({
+  loginAction
+})
+```
+
+```html
+<div class="panel-account">
+  <el-form
+    :model="account"
+    label-width="60px"
+    size="large"
+    :rules="accountRules"
+    ref="formRef"
+  >
+    <el-form-item label="账号" prop="name">
+      <el-input v-model="account.name" />
+    </el-form-item>
+    <el-form-item label="密码" prop="password">
+      <el-input show-password v-model="account.password" />
+    </el-form-item>
+  </el-form>
+</div>
+```
+
+## main
+
+### 侧边栏
+
+![](https://img.xbin.cn/images/2023/08/26-01-03-bc9e9e.png)
+
+```html
+<div class="menu">
+  <el-menu
+    default-active="39"
+    text-color="#b7bdc3"
+    active-text-color="#fff"
+    background-color="#001529"
+  >
+    <!-- 遍历菜单 -->
+    <template v-for="item in userMenus" :key="item.id">
+      <el-sub-menu :index="String(item.id)">
+        <template #title>
+          <!-- 字符串转成组件: "el-icon-setting" <el-icon><Monitor /></el-icon>-->
+          <el-icon>
+            <component :is="item.icon.split('el-icon-')[1]" />
+          </el-icon>
+          <template v-if="item.icon"></template>
+          <span>{{ item.name }}</span>
+        </template>
+        <template v-for="subitem in item.children" :key="subitem.id">
+          <el-menu-item :index="String(subitem.id)"
+            >{{ subitem.name }}</el-menu-item
+          >
+        </template>
+      </el-sub-menu>
+    </template>
+  </el-menu>
+</div>
+```
