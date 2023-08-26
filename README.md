@@ -449,9 +449,10 @@ createApp(App).use(router).use(pinia).use(registerIcons).mount('#app')
 ![](https://img.xbin.cn/images/2023/08/24-17-11-2852dc.png)
 
 ```ts
-// 导航守卫
+// 导航守卫(to:哪里来,from:哪里去)
 router.beforeEach((to, from) => {
   const token = localCache.getCache(LOGIN_TOKEN)
+  // 查看token是否存在:不存在就返回登录页面
   if (to.path === '/main' && !token) {
     return '/login'
   }
@@ -640,4 +641,351 @@ defineExpose({
     </template>
   </el-menu>
 </div>
+```
+
+### 动态路由
+
+![](https://img.xbin.cn/images/2023/08/27-02-28-9bc4ce.png)
+
+[动态创建页面路由工具](https://github.com/coderwhy/coderwhy)
+
+```sh
+# 安装
+npm install coderwhy -g
+# 查看
+coderwhy --version
+# 添加页面和路由
+coderwhy add3page_setup test -d src/views/main/test
+```
+
+### 封装动态路由
+
+```ts
+// utils => map-menus.ts
+import type { RouteRecordRaw } from 'vue-router'
+
+function loadLocalRoutes() {
+  // 1.获取菜单
+  // const userMenusResult = await getUserMenusByRoleId(this.userInfo.role?.id)
+  // this.userMenus = userMenusResult.data
+
+  // 2.获取所以路由对象.放到数组中
+  const localRoutes: RouteRecordRaw[] = []
+  // 2.1 读取router/main所以ts文件
+  const files: Record<string, any> = import.meta.glob('@/router/main/**/*.ts', {
+    eager: true
+  })
+  // 2.2 将所以的数据遍历得到数组,并放入数组
+  for (const key in files) {
+    const module = files[key]
+    localRoutes.push(module.default)
+  }
+  return localRoutes
+}
+
+export function mapMenusToRoutes(userMenus: any[]) {
+  const localRoutes = loadLocalRoutes()
+  // 3.根据菜单动态匹配路由
+  const routes: RouteRecordRaw[] = []
+  // 第一层路由
+  for (const menu of userMenus) {
+    // 第二层路由
+    for (const submenu of menu.children) {
+      // 遍历localRoutes里面的数据对比后端里面的子路径 {path: '/main/analysis/dashboard', component: ƒ}
+      const route = localRoutes.find((item) => item.path === submenu.url)
+      // 放入到动态路由目录
+      if (route) routes.push(route)
+    }
+  }
+  return routes
+}
+```
+
+```ts
+// store => login/login.ts
+// 动态添加路由
+import { mapMenusToRoutes } from '@/utils/map-menus'
+
+const routes = mapMenusToRoutes(this.userMenus)
+routes.forEach((route) => router.addRoute('main', route))
+```
+
+### 封装动态不封装
+
+```ts
+import { defineStore } from 'pinia'
+import router from '@/router'
+import {
+  accountLoginRequest,
+  getUserInfoById,
+  getUserMenusByRoleId
+} from '@/service/login/login'
+
+import type { IAccount } from '@/types'
+import type { RouteRecordRaw } from 'vue-router'
+
+import { localCache } from '@/utils/cache'
+import { LOGIN_TOKEN, USER_INFO, USER_MENUS } from '@/global/constants'
+
+type ILoginState = {
+  token: string
+  userMenus: any
+  userInfo: any
+}
+
+export const useLoginStore = defineStore('login', {
+  // 指定state类型
+  state: (): ILoginState => ({
+    token: '',
+    userInfo: {},
+    userMenus: []
+  }),
+  actions: {
+    async loginAccountAction(account: IAccount) {
+      // 1.账号登录,获取 token
+      const loginResult = await accountLoginRequest(account)
+      const id: number = loginResult.data.id
+      this.token = loginResult.data.token
+      localCache.setCache(LOGIN_TOKEN, this.token)
+
+      // 2.获取用户详细信息
+      const userInfoResult = await getUserInfoById(id)
+      this.userInfo = userInfoResult.data
+
+      // 3.根据角色请求用户的权限
+      const userMenusResult = await getUserMenusByRoleId(this.userInfo.role?.id)
+      this.userMenus = userMenusResult.data
+
+      // 2.进行本地缓存
+      localCache.setCache(USER_INFO, this.userInfo)
+      localCache.setCache(USER_MENUS, this.userMenus)
+
+      // 重要: 动态添加路由
+      // 1.获取菜单
+      /*
+      const userMenusResult = await getUserMenusByRoleId(this.userInfo.role?.id)
+      this.userMenus = userMenusResult.data
+      */
+
+      // 2.获取所以路由对象.放到数组中
+      const localRoutes: RouteRecordRaw[] = []
+      // 2.1 读取router/main所以ts文件
+      const files: Record<string, any> = import.meta.glob(
+        '@/router/main/**/*.ts',
+        { eager: true }
+      )
+      // 2.2 将所以的数据遍历得到数组,并放入数组
+      for (const key in files) {
+        const module = files[key]
+        localRoutes.push(module.default)
+      }
+
+      // 3.根据菜单动态匹配路由
+      // 第一层路由
+      for (const menu of this.userMenus) {
+        // 第二层路由
+        for (const submenu of menu.children) {
+          // 遍历locaRoutes里面的数据对比后端里面的子路径 {path: '/main/analysis/dashboard', component: ƒ}
+          const route = localRoutes.find((item) => item.path === submenu.url)
+          if (route) router.addRoute('main', route)
+        }
+      }
+
+      // 5.页面跳转(main)
+      router.push('/main')
+    },
+    loadLocalCacheAction() {
+      // 1.用户进行刷新默认加载操作
+      const token = localCache.getCache(LOGIN_TOKEN)
+      const userInfo = localCache.getCache(USER_INFO)
+      const userMenus = localCache.getCache(USER_MENUS)
+      // 用户进行刷新: 判断用户是否登录以及是否包含userMenus菜单
+      if (token && userInfo && userMenus) {
+        this.token = token
+        this.userInfo = userInfo
+        this.userMenus = userMenus
+        // 动态添加路由
+        const routes = mapMenusToRoutes(this.userMenus)
+        routes.forEach((route) => router.addRoute('main', route))
+      }
+    }
+  }
+})
+```
+
+### 动态路由另一种实现方式
+
+```ts
+import { createRouter, createWebHashHistory } from 'vue-router'
+import { localCache } from '@/utils/cache'
+import { LOGIN_TOKEN } from '@/global/constants'
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes: [
+    {
+      path: '/',
+      redirect: '/main'
+    },
+    {
+      path: '/login',
+      component: () => import('@/views/Login/login.vue')
+    },
+    {
+      path: '/main',
+      name: 'main',
+      component: () => import('@/views/Main/Main.vue')
+    },
+    {
+      path: '/:pathMatch(.*)',
+      component: () => import('@/views/NotFound/NotFound.vue')
+    }
+  ]
+})
+
+const localRoutes = [
+  {
+    path: '/main/analysis/overview',
+    component: () => import('@/views/Main/Analysis/Overview/Overview.vue')
+  },
+  {
+    path: '/main/analysis/dashboard',
+    component: () => import('@/views/Main/Analysis/Dashboard/Dashboard.vue')
+  }
+]
+// 动态添加路由
+router.addRoute('main', localRoutes[0])
+router.addRoute('main', localRoutes[1])
+
+// 导航守卫
+router.beforeEach((to, from) => {
+  const token = localCache.getCache(LOGIN_TOKEN)
+  if (to.path === '/main' && !token) {
+    return '/login'
+  }
+})
+
+export default router
+```
+
+### 动态路由刷新
+
+```ts
+// store => login/login.ts
+export const useLoginStore = defineStore('login', {
+  // 指定state类型
+  state: (): ILoginState => ({
+    token: '',
+    userInfo: {},
+    userMenus: []
+  }),
+  actions: {
+    async loginAccountAction(account: IAccount) {
+      // 1.账号登录,获取 token
+      const loginResult = await accountLoginRequest(account)
+      const id: number = loginResult.data.id
+      this.token = loginResult.data.token
+      localCache.setCache(LOGIN_TOKEN, this.token)
+
+      // 2.获取用户详细信息
+      const userInfoResult = await getUserInfoById(id)
+      this.userInfo = userInfoResult.data
+
+      // 3.根据角色请求用户的权限
+      const userMenusResult = await getUserMenusByRoleId(this.userInfo.role?.id)
+      this.userMenus = userMenusResult.data
+
+      // 2.进行本地缓存
+      localCache.setCache(USER_INFO, this.userInfo)
+      localCache.setCache(USER_MENUS, this.userMenus)
+
+      // 动态添加路由
+      const routes = mapMenusToRoutes(this.userMenus)
+      routes.forEach((route) => router.addRoute('main', route))
+
+      // 5.页面跳转(main)
+      router.push('/main')
+    },
+    loadLocalCacheAction() {
+      // 1.用户进行刷新默认加载操作
+      const token = localCache.getCache(LOGIN_TOKEN)
+      const userInfo = localCache.getCache(USER_INFO)
+      const userMenus = localCache.getCache(USER_MENUS)
+      // 用户进行刷新: 判断用户是否登录以及是否包含userMenus菜单
+      if (token && userInfo && userMenus) {
+        this.token = token
+        this.userInfo = userInfo
+        this.userMenus = userMenus
+        // 动态添加路由
+        const routes = mapMenusToRoutes(this.userMenus)
+        routes.forEach((route) => router.addRoute('main', route))
+      }
+    }
+  }
+})
+```
+
+```ts
+// store => index.ts
+import { createPinia } from 'pinia'
+import type { App } from 'vue'
+import { useLoginStore } from './login/login'
+
+const pinia = createPinia()
+
+function registerStore(app: App<Element>) {
+  // 使用pinia
+  app.use(pinia)
+  // 加载本地数据
+  const loginStore = useLoginStore()
+  loginStore.loadLocalCacheAction()
+}
+
+export default registerStore
+```
+
+```ts
+// main.ts
+import store from './store'
+createApp(App).use(store).use(router).use(registerIcons).mount('#app')
+```
+
+### 进入页面菜单匹配
+
+```ts
+// utils => map-menus.ts
+export let firstMenu: any = null
+export function mapMenusToRoutes(userMenus: any[]) {
+  const localRoutes = loadLocalRoutes()
+  // 3.根据菜单动态匹配路由
+  const routes: RouteRecordRaw[] = []
+  // 第一层路由
+  for (const menu of userMenus) {
+    // 第二层路由
+    for (const submenu of menu.children) {
+      // 遍历localRoutes里面的数据对比后端里面的子路径 {path: '/main/analysis/dashboard', component: ƒ}
+      const route = localRoutes.find((item) => item.path === submenu.url)
+      // 放入到动态路由目录
+      if (route) routes.push(route)
+      // 记录第一个被匹配到的菜单
+      if (!firstMenu && route) firstMenu = submenu
+      console.log(submenu)
+    }
+  }
+  return routes
+}
+```
+
+```ts
+// router => index.ts
+// 导航守卫
+router.beforeEach((to, from) => {
+  const token = localCache.getCache(LOGIN_TOKEN)
+  if (to.path === '/main' && !token) {
+    return '/login'
+  }
+  if (to.path === '/main') {
+    return firstMenu?.url
+  }
+})
 ```

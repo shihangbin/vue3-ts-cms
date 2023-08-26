@@ -5,8 +5,13 @@ import {
   getUserInfoById,
   getUserMenusByRoleId
 } from '@/service/login/login'
+
 import type { IAccount } from '@/types'
+import type { RouteRecordRaw } from 'vue-router'
+
 import { localCache } from '@/utils/cache'
+import { mapMenusToRoutes } from '@/utils/map-menus'
+
 import { LOGIN_TOKEN, USER_INFO, USER_MENUS } from '@/global/constants'
 
 type ILoginState = {
@@ -18,9 +23,9 @@ type ILoginState = {
 export const useLoginStore = defineStore('login', {
   // 指定state类型
   state: (): ILoginState => ({
-    token: localCache.getCache(LOGIN_TOKEN) ?? '',
-    userInfo: localCache.getCache(USER_INFO) ?? {},
-    userMenus: localCache.getCache(USER_MENUS) ?? []
+    token: '',
+    userInfo: {},
+    userMenus: []
   }),
   actions: {
     async loginAccountAction(account: IAccount) {
@@ -42,8 +47,27 @@ export const useLoginStore = defineStore('login', {
       localCache.setCache(USER_INFO, this.userInfo)
       localCache.setCache(USER_MENUS, this.userMenus)
 
+      // 动态添加路由
+      const routes = mapMenusToRoutes(this.userMenus)
+      routes.forEach((route) => router.addRoute('main', route))
+
       // 5.页面跳转(main)
       router.push('/main')
+    },
+    loadLocalCacheAction() {
+      // 1.用户进行刷新默认加载操作
+      const token = localCache.getCache(LOGIN_TOKEN)
+      const userInfo = localCache.getCache(USER_INFO)
+      const userMenus = localCache.getCache(USER_MENUS)
+      // 用户进行刷新: 判断用户是否登录以及是否包含userMenus菜单
+      if (token && userInfo && userMenus) {
+        this.token = token
+        this.userInfo = userInfo
+        this.userMenus = userMenus
+        // 动态添加路由
+        const routes = mapMenusToRoutes(this.userMenus)
+        routes.forEach((route) => router.addRoute('main', route))
+      }
     }
   }
 })
