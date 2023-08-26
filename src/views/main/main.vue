@@ -13,14 +13,16 @@ const onFoldChange = (isFold: boolean) => {
 <template>
   <div class="main">
     <el-container class="main-content">
-      <el-aside class="aside" :width="isCollapse ? '64px' : '210px'">
+      <el-aside class="aside" :width="isCollapse ? '65px' : '210px'">
         <main-menu :is-fold="isCollapse" />
       </el-aside>
       <el-container class="content">
         <el-header class="header" height="50px">
           <main-header @fold-change="onFoldChange" />
         </el-header>
-        <el-main class="main">Main</el-main>
+        <el-main class="main">
+          <router-view></router-view>
+        </el-main>
       </el-container>
     </el-container>
   </div>
@@ -38,8 +40,7 @@ const onFoldChange = (isFold: boolean) => {
       background-color: #0c1f36;
       -ms-overflow-style: none; /* IE and Edge */
       scrollbar-width: none; /* Firefox */
-      transition: width 0.5s ease;
-
+      transition: all 0.5s ease;
       &::-webkit-scrollbar {
         display: none;
       }
