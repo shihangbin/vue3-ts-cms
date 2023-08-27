@@ -952,6 +952,8 @@ createApp(App).use(store).use(router).use(registerIcons).mount('#app')
 
 ### 进入页面菜单匹配
 
+![](https://img.xbin.cn/images/2023/08/27-04-11-cf511d.png)
+
 ```ts
 // utils => map-menus.ts
 export let firstMenu: any = null
@@ -989,3 +991,159 @@ router.beforeEach((to, from) => {
   }
 })
 ```
+
+```ts
+// utils => map-menus.ts
+/**
+ * 根据路径去匹配需要的菜单
+ * @param path 需要匹配的路径
+ * @param userMenus 所以菜单
+ */
+export function mapPathToMenu(path: string, userMenus: any[]) {
+  for (const menu of userMenus) {
+    for (const submenu of menu.children) {
+      if (submenu.url === path) {
+        return submenu
+      }
+    }
+  }
+}
+```
+
+```ts
+// components => MainMenu.vue
+const route = useRoute()
+const pathMenu = mapPathToMenu(route.path, userMenus)
+// 默认选择菜单
+const defaultActive = ref(String(pathMenu.id))
+```
+
+## 面包屑
+
+![](https://img.xbin.cn/images/2023/08/27-17-22-363d12.png)
+
+```ts
+// utils => map-menus.ts
+/**
+ * 面包屑
+ * @param path 需要匹配的路径
+ * @param userMenus 所有菜单
+ */
+interface IBreadcrumbs {
+  name: string
+  path: string
+}
+export function mapPathToBreadcrumbs(path: string, userMenus: any[]) {
+  // 1.定义面包屑
+  const breadcrumbs: IBreadcrumbs[] = []
+
+  // 2.遍历数据获取面包屑层级
+  for (const menu of userMenus) {
+    for (const submenu of menu.children) {
+      if (submenu.url === path) {
+        breadcrumbs.push({ name: menu.name, path: menu.url })
+        breadcrumbs.push({ name: submenu.name, path: submenu.url })
+      }
+    }
+  }
+  return breadcrumbs
+}
+```
+
+```ts
+// components => MainBreadcrumb.vue
+import { useRoute } from 'vue-router'
+import { useLoginStore } from '@/store/login/login'
+import { mapPathToBreadcrumbs } from '@/utils/map-menus'
+import { computed } from 'vue'
+
+const route = useRoute()
+const userMenus = useLoginStore().userMenus
+const breadcrumbs = computed(() => {
+  return mapPathToBreadcrumbs(route.path, userMenus)
+})
+```
+
+```html
+<!-- components => MainBreadcrumb.vue -->
+<div class="MainBreadcrumb">
+  <el-breadcrumb separator-icon="ArrowRight">
+    <template v-for="item in breadcrumbs" :key="item.name">
+      <el-breadcrumb-item :to="item.path"> {{ item.name }} </el-breadcrumb-item>
+    </template>
+  </el-breadcrumb>
+</div>
+```
+
+```ts
+// utils => map-menus.ts
+// 从定向顶级菜单
+function loadLocalRoutes() {
+  // 1.获取菜单
+  // const userMenusResult = await getUserMenusByRoleId(this.userInfo.role?.id)
+  // this.userMenus = userMenusResult.data
+
+  // 2.获取所有路由对象.放到数组中
+  const localRoutes: RouteRecordRaw[] = []
+  // 2.1 读取router/main所有ts文件
+  const files: Record<string, any> = import.meta.glob('@/router/main/**/*.ts', {
+    eager: true
+  })
+  // 2.2 将所有的数据遍历得到数组,并放入数组
+  for (const key in files) {
+    const module = files[key]
+    localRoutes.push(module.default)
+  }
+  return localRoutes
+}
+export let firstMenu: any = null
+export function mapMenusToRoutes(userMenus: any[]) {
+  const localRoutes = loadLocalRoutes()
+  // 3.根据菜单动态匹配路由
+  const routes: RouteRecordRaw[] = []
+  // 第一层路由
+  for (const menu of userMenus) {
+    // 第二层路由
+    for (const submenu of menu.children) {
+      // 遍历localRoutes里面的数据对比后端里面的子路径 {path: '/main/analysis/dashboard', component: ƒ}
+      const route = localRoutes.find((item) => item.path === submenu.url)
+      // 放入到动态路由目录
+      if (route) {
+        // 1.给顶层菜单添加重定向
+        if (!routes.find((item) => item.path === menu.url)) {
+          routes.push({ path: menu.url, redirect: route.path })
+        }
+        // 2.将二级菜单对应路径
+        routes.push(route)
+      }
+      // 记录第一个被匹配到的菜单
+      if (!firstMenu && route) firstMenu = submenu
+    }
+  }
+  return routes
+}
+```
+
+## 系统管理
+
+![](https://img.xbin.cn/images/2023/08/28-00-51-2299a9.png)
+
+### 状态
+
+![](https://img.xbin.cn/images/2023/08/28-00-52-ed2754.png)
+
+```html
+<el-table-column prop="enable" label="状态" width="100" align="center">
+  <!-- 作用域插槽 -->
+  <template #default="scope">
+    <el-button
+      size="small"
+      :type="scope.row.enable ? 'success' : 'danger'"
+      plain
+    >
+      {{ scope.row.enable ? '启用' : '禁用' }}
+    </el-button>
+  </template>
+</el-table-column>
+```
+### 时间格式化

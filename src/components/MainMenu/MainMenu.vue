@@ -1,6 +1,9 @@
 <script lang="ts" setup>
+import { ref, computed } from 'vue'
 import router from '@/router'
 import { useLoginStore } from '@/store/login/login'
+import { firstMenu, mapPathToMenu } from '@/utils/map-menus'
+import { useRoute } from 'vue-router'
 
 defineProps({
   isFold: {
@@ -16,6 +19,12 @@ const onItem = (item: any) => {
   const url = item.url
   router.push(url)
 }
+const route = useRoute()
+// 默认选择菜单
+const defaultActive = computed(() => {
+  const pathMenu = mapPathToMenu(route.path, userMenus)
+  return String(pathMenu.id)
+})
 </script>
 
 <template>
@@ -28,7 +37,7 @@ const onItem = (item: any) => {
     </el-affix>
     <div class="menu">
       <el-menu
-        default-active="39"
+        :default-active="defaultActive"
         :collapse="isFold"
         text-color="#b7bdc3"
         active-text-color="#fff"
