@@ -1146,4 +1146,128 @@ export function mapMenusToRoutes(userMenus: any[]) {
   </template>
 </el-table-column>
 ```
+
 ### 时间格式化
+
+![](https://img.xbin.cn/images/2023/08/28-16-57-a56816.png)
+
+```ts
+// utils => formatTime.ts
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+
+dayjs.extend(utc)
+
+export function formatUTC(
+  utcString: string,
+  format: string = 'YYYY/MM/DD HH:mm:ss'
+) {
+  const resultTime = dayjs.utc(utcString).utcOffset(8).format(format)
+  return resultTime
+}
+```
+
+```html
+<el-table-column prop="createAt" label="创建时间" align="center">
+  <template #default="scope"> {{ formatUTC(scope.row.createAt) }} </template>
+</el-table-column>
+```
+
+## 分页器
+
+![](https://img.xbin.cn/images/2023/08/28-17-38-5e4e58.png)
+
+### 封装网络请求
+
+```ts
+// service => main => system => system.ts
+import { sjRequest } from '@/service'
+
+export function postUserListData(queryInfo: any) {
+  return sjRequest.post({
+    url: '/users/list',
+    data: queryInfo
+  })
+}
+```
+
+```ts
+import { defineStore } from 'pinia'
+import { postUserListData } from '@/service/main/system/stytem'
+import type { ISystem } from './type'
+
+export const useSystemStore = defineStore('system', {
+  // 为了完整类型推理，推荐使用箭头函数
+  state: (): ISystem => {
+    return {
+      userList: [],
+      userTotalCount: 0
+    }
+  },
+  actions: {
+    async postUserListAction(queryInfo: any) {
+      // 调用网络请求
+      const userListResult = await postUserListData(queryInfo)
+      const { list, totalCount } = userListResult.data
+      this.userList = list
+      this.userTotalCount = totalCount
+    }
+  }
+})
+```
+
+```html
+<!-- 页面 -->
+<div class="Pagination">
+  <el-pagination
+    v-model:current-page="currentPage"
+    v-model:page-size="pageSize"
+    :page-sizes="[10, 20, 30, 40]"
+    layout="total, sizes, prev, pager, next, jumper"
+    :total="userTotalCount"
+    @size-change="handleSizeChange"
+    @current-change="handleCurrentChange"
+  />
+</div>
+```
+
+```ts
+import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useSystemStore } from '@/store/main/system/system'
+
+// 获取store
+const systemStore = useSystemStore()
+// 页数
+const pageSize = ref(10)
+// 页码
+const currentPage = ref(1)
+
+// 调用网络请求
+const fetchUserListData = () => {
+  const size = pageSize.value
+  const offset = (currentPage.value - 1) * size
+  const info = { size, offset }
+  // 发送请求
+  systemStore.postUserListAction(info)
+}
+fetchUserListData()
+
+// 从store中解构列表和总列表数 响应式store数据
+const { userList, userTotalCount } = storeToRefs(systemStore)
+
+const handleSizeChange = () => {
+  fetchUserListData()
+}
+const handleCurrentChange = () => {
+  fetchUserListData()
+}
+```
+
+## 增
+
+## 删
+
+## 改
+
+## 查
