@@ -21,6 +21,8 @@
 
 ## 目录结构
 
+![](https://img.xbin.cn/images/2023/08/29-02-31-246158.png)
+
 1. `.vscode`：vscode插件推荐
 2. `node_modules`：包
 3. `public`：公共文件
@@ -41,6 +43,8 @@
 18. `vite.config.ts`：给 vite 做配置
 
 ## src 结构
+
+![](https://img.xbin.cn/images/2023/08/29-02-32-9d0cc3.png)
 
 1. `assets`：静态文件
 2. `components`：组件

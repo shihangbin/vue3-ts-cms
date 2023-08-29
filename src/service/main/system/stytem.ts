@@ -26,3 +26,31 @@ export function editUserListData(id: number, userInfo: any) {
     data: userInfo
   })
 }
+
+// 真的页面网络请求的增删改查
+export function postPageListData(pageName: string, queryInfo: any) {
+  return sjRequest.post({
+    url: `/${pageName}/list`,
+    data: queryInfo
+  })
+}
+
+export function deletePageById(pageName: string, id: number) {
+  return sjRequest.delete({
+    url: `/${pageName}/${id}`
+  })
+}
+
+export function newPageData(pageName: string, userInfo: any) {
+  return sjRequest.post({
+    url: `/${pageName}`,
+    data: userInfo
+  })
+}
+
+export function editPageListData(pageName: string, id: number, userInfo: any) {
+  return sjRequest.patch({
+    url: `/${pageName}/${id}`,
+    data: userInfo
+  })
+}

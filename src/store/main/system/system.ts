@@ -3,7 +3,11 @@ import {
   deleteUserListData,
   editUserListData,
   newUserData,
-  postUserListData
+  postUserListData,
+  postPageListData,
+  deletePageById,
+  editPageListData,
+  newPageData
 } from '@/service/main/system/stytem'
 import type { ISystem } from './type'
 
@@ -12,7 +16,10 @@ export const useSystemStore = defineStore('system', {
   state: (): ISystem => {
     return {
       userList: [],
-      userTotalCount: 0
+      userTotalCount: 0,
+
+      pageList: [],
+      pageTotalCount: 0
     }
   },
   actions: {
@@ -33,6 +40,26 @@ export const useSystemStore = defineStore('system', {
     async editUserDataAction(id: number, userInfo: any) {
       const editResult = await editUserListData(id, userInfo)
       this.postUserListAction({ offset: 0, size: 10 })
+    },
+
+    // 页面的数据
+    async postPageListAction(pageName: string, queryInfo: any) {
+      const pageListResult = await postPageListData(pageName, queryInfo)
+      const { totalCount, list } = pageListResult.data
+      this.pageList = list
+      this.pageTotalCount = totalCount
+    },
+    async deletePageListByIdAction(pageName: string, id: number) {
+      const deleteResult = await deletePageById(pageName, id)
+      this.postPageListAction(pageName, { offset: 0, size: 10 })
+    },
+    async editPageDataAction(pageName: string, id: number, userInfo: any) {
+      const editResult = await editPageListData(pageName, id, userInfo)
+      this.postPageListAction(pageName, { offset: 0, size: 10 })
+    },
+    async newPageListAction(pageName: string, userInfo: any) {
+      const newListResult = await newPageData(pageName, userInfo)
+      this.postPageListAction(pageName, { offset: 0, size: 10 })
     }
   }
 })
