@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import PageSearch from '@/components/page-search/page-search.vue'
-import PageContent from './components/PageContent.vue'
-import PageModel from './components/PageModel.vue'
+import PageContent from '@/components/page-content/page-content.vue'
+import PageModel from '@/components/page-model/page-model.vue'
 
 import searchConfig from './config/search.config'
+import contentConfig from './config/content.config'
+import modelConfig from './config/model.config'
 
 const contentRef = ref<InstanceType<typeof PageContent>>()
 const handleQueryClick = (queryInfo: any) => {
@@ -32,10 +34,11 @@ const handleEditClick = (itemData: any) => {
     ></page-search>
     <page-content
       ref="contentRef"
+      :content-config="contentConfig"
       @new-click="handleNewClick"
       @edit-click="handleEditClick"
     ></page-content>
-    <page-model ref="modelRef"></page-model>
+    <page-model :model-config="modelConfig" ref="modelRef"></page-model>
   </div>
 </template>
 

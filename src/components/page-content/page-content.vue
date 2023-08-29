@@ -4,6 +4,18 @@ import { storeToRefs } from 'pinia'
 import { useSystemStore } from '@/store/main/system/system'
 import { formatUTC } from '@/utils/formatTime'
 
+interface IProps {
+  contentConfig: {
+    pageName: string
+    header?: {
+      title?: string
+      btnTitle?: string
+    }
+    propsList: any[]
+  }
+}
+const props = defineProps<IProps>()
+
 const emit = defineEmits(['newClick', 'editClick'])
 
 const systemStore = useSystemStore()
@@ -17,7 +29,7 @@ const fetchPageListData = (formatData: any = {}) => {
   const info = { size, offset }
 
   const queryInfo = { ...info, ...formatData }
-  systemStore.postPageListAction('department', queryInfo)
+  systemStore.postPageListAction(props.contentConfig.pageName, queryInfo)
 }
 fetchPageListData()
 
@@ -34,7 +46,7 @@ const newBtnClick = () => {
   emit('newClick')
 }
 const deleteBtnClick = (id: number) => {
-  systemStore.deletePageListByIdAction('department', id)
+  systemStore.deletePageListByIdAction(props.contentConfig.pageName, id)
 }
 const editBtnClick = (itemData: any) => {
   emit('editClick', itemData)
@@ -46,65 +58,49 @@ defineExpose({ fetchPageListData })
 <template>
   <div class="content">
     <div class="header">
-      <h3 class="title">部门列表</h3>
+      <h3 class="title">{{ contentConfig.header?.title ?? '数据列表' }}</h3>
       <el-button @click="newBtnClick" class="pagination" type="primary">
-        新建部门
+        {{ contentConfig.header?.btnTitle ?? '新建数据' }}
       </el-button>
     </div>
     <div class="table">
       <el-table :data="pageList" border style="width: 100%">
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column prop="id" label="ID" width="70" align="center" />
-        <el-table-column
-          prop="name"
-          label="部门名称"
-          width="150"
-          align="center"
-        />
-        <el-table-column
-          prop="leader"
-          label="部门领导"
-          width="150"
-          align="center"
-        />
-        <el-table-column
-          prop="parentId"
-          label="上级部门"
-          width="150"
-          align="center"
-        />
-        <el-table-column prop="createAt" label="创建时间" align="center">
-          <template #default="scope">
-            {{ formatUTC(scope.row.createAt) }}
+        <template v-for="item in contentConfig.propsList" :key="item.prop">
+          <template v-if="item.type === 'timer'">
+            <el-table-column v-bind="item" align="center">
+              <template #default="scope">
+                {{ formatUTC(scope.row[item.prop]) }}
+              </template>
+            </el-table-column>
           </template>
-        </el-table-column>
-        <el-table-column prop="updateAt" label="更新时间" align="center">
-          <template #default="scope">
-            {{ formatUTC(scope.row.updateAt) }}
+          <template v-else-if="item.type === 'btnClick'">
+            <el-table-column v-bind="item" align="center">
+              <template #default="scope">
+                <el-button
+                  @click="editBtnClick(scope.row)"
+                  size="small"
+                  type="primary"
+                  text
+                  icon="Edit"
+                >
+                  编辑
+                </el-button>
+                <el-button
+                  @click="deleteBtnClick(scope.row.id)"
+                  size="small"
+                  type="danger"
+                  text
+                  icon="Delete"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
           </template>
-        </el-table-column>
-        <el-table-column label="操作" align="center" width="170">
-          <template #default="scope">
-            <el-button
-              @click="editBtnClick(scope.row)"
-              size="small"
-              type="primary"
-              text
-              icon="Edit"
-            >
-              编辑
-            </el-button>
-            <el-button
-              @click="deleteBtnClick(scope.row.id)"
-              size="small"
-              type="danger"
-              text
-              icon="Delete"
-            >
-              删除
-            </el-button>
+          <template v-else>
+            <el-table-column v-bind="item" align="center" />
           </template>
-        </el-table-column>
+        </template>
       </el-table>
     </div>
     <div class="Pagination">
