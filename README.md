@@ -1268,10 +1268,524 @@ const handleCurrentChange = () => {
 }
 ```
 
-## 增
+## 抽取重构
 
-## 删
+### 页面
 
-## 改
+![](https://img.xbin.cn/images/2023/08/30-19-58-ea923c.png)
 
-## 查
+```html
+<!-- 新建页面 -->
+<div class="model">
+  <el-dialog
+    v-model="dialogVisible"
+    :title="
+        isNewRef ? modelConfig.header.newTitle : modelConfig.header.editTitle
+      "
+    width="30%"
+    center
+  >
+    <div class="form">
+      <el-form :model="formData" label-width="80px" size="large">
+        <template v-for="item in modelConfig.formItems" :key="item.prop">
+          <el-form-item v-bind="item">
+            <template v-if="item.type === 'input'">
+              <el-input
+                v-model="formData[item.prop]"
+                :placeholder="item.placeholder"
+              />
+            </template>
+            <template v-if="item.type === 'select'">
+              <el-select
+                v-model="formData[item.prop]"
+                :placeholder="item.placeholder"
+                style="width: 100%"
+              >
+                <template v-for="option in item.options" :key="option.value">
+                  <el-option :label="option.label" :value="option.value" />
+                </template>
+              </el-select>
+            </template>
+          </el-form-item>
+        </template>
+      </el-form>
+    </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="dialogVisible = false"> 取消 </el-button>
+        <el-button @click="newConfirmClick" type="primary"> 确定 </el-button>
+      </div>
+    </template>
+  </el-dialog>
+</div>
+```
+
+```ts
+// 新建逻辑
+import { reactive } from 'vue'
+import { ref } from 'vue'
+import { useSystemStore } from '@/store/main/system/system'
+
+interface IProps {
+  modelConfig: {
+    pageName: string
+    header: {
+      newTitle: string
+      editTitle: string
+    }
+    formItems: any[]
+  }
+}
+const props = defineProps<IProps>()
+
+const dialogVisible = ref(false)
+const isNewRef = ref(true)
+const editData = ref()
+
+const initialData: any = {}
+for (const item of props.modelConfig.formItems) {
+  initialData[item.prop] = ''
+}
+const formData = reactive<any>(initialData)
+
+const setModelVisible = (isNew: boolean = true, itemData?: any) => {
+  dialogVisible.value = true
+  isNewRef.value = isNew
+  if (!isNew && itemData) {
+    // 编辑
+    for (const key in formData) {
+      formData[key] = itemData[key]
+    }
+    editData.value = itemData
+  } else {
+    // 新建
+    for (const key in formData) {
+      formData[key] = ''
+    }
+    editData.value = null
+  }
+}
+const systemStore = useSystemStore()
+
+const newConfirmClick = () => {
+  dialogVisible.value = false
+  if (!isNewRef.value && editData.value) {
+    // 编辑
+    systemStore.editPageDataAction(
+      props.modelConfig.pageName,
+      editData.value.id,
+      formData
+    )
+  } else {
+    // 新建
+    systemStore.newPageListAction(props.modelConfig.pageName, formData)
+    console.log(formData)
+  }
+}
+
+defineExpose({ setModelVisible })
+```
+
+```ts
+// 新建配置
+const modelConfig = {
+  pageName: 'department',
+  header: {
+    newTitle: '新建部门',
+    editTitle: '编辑部门'
+  },
+  formItems: [
+    {
+      type: 'input',
+      label: '部门名称',
+      prop: 'name',
+      placeholder: '请输入部门名称'
+    },
+    {
+      type: 'select',
+      label: '上级部门',
+      prop: 'parentId',
+      placeholder: '请输入上级部门',
+      options: []
+    },
+    {
+      type: 'input',
+      label: '部门领导',
+      prop: 'leader',
+      placeholder: '请输入部门领导'
+    }
+  ]
+}
+
+export default modelConfig
+```
+
+### 父级页面
+
+```html
+<!-- 父级调用 -->
+<div class="department">
+  <page-search
+    :search-config="searchConfig"
+    @query-click="handleQueryClick"
+    @reset-click="handleResetClick"
+  >
+  </page-search>
+  <page-content
+    ref="contentRef"
+    :content-config="contentConfig"
+    @new-click="handleNewClick"
+    @edit-click="handleEditClick"
+  >
+  </page-content>
+  <page-model :model-config="modelConfigRef" ref="modelRef"></page-model>
+</div>
+```
+
+```ts
+import { ref, computed } from 'vue'
+import PageContent from '@/components/page-content/page-content.vue'
+import PageModel from '@/components/page-model/page-model.vue'
+
+import modelConfig from './config/model.config'
+import { userMainStore } from '@/store/main/main'
+
+const modelConfigRef = computed(() => {
+  const mainStore = userMainStore()
+  const department = mainStore.entireDepartments.map((item) => {
+    return { label: item.name, value: item.id }
+  })
+  modelConfig.formItems.forEach((item: any) => {
+    if (item.prop === 'parentId') {
+      item.options?.push(...department)
+    }
+  })
+  return modelConfig
+})
+
+const modelRef = ref<InstanceType<typeof PageModel>>()
+const handleNewClick = () => {
+  modelRef.value?.setModelVisible()
+}
+const handleEditClick = (itemData: any) => {
+  modelRef.value?.setModelVisible(false, itemData)
+}
+```
+
+![](https://img.xbin.cn/images/2023/08/30-20-16-c2ad00.png)
+
+```ts
+// 下拉框选择数据获取
+const modelConfigRef = computed(() => {
+  const mainStore = userMainStore()
+  const department = mainStore.entireDepartments.map((item) => {
+    return { label: item.name, value: item.id }
+  })
+  modelConfig.formItems.forEach((item: any) => {
+    if (item.prop === 'parentId') {
+      item.options?.push(...department)
+    }
+  })
+  return modelConfig
+})
+```
+
+```ts
+// 功能
+const newConfirmClick = () => {
+  dialogVisible.value = false
+  if (!isNewRef.value && editData.value) {
+    // 编辑
+    systemStore.editPageDataAction(
+      props.modelConfig.pageName,
+      editData.value.id,
+      formData
+    )
+  } else {
+    // 新建
+    systemStore.newPageListAction(props.modelConfig.pageName, formData)
+    console.log(formData)
+  }
+}
+```
+
+### store 封装
+
+```ts
+// type.ts
+export type IUser = {
+  id: number
+  name: string
+  realname: string
+  cellphone: number
+  enable: number
+  departmentId: number
+  roleId: number
+  createAt: string
+  updateAt: string
+}
+
+export interface ISystem {
+  userList: IUser[]
+  userTotalCount: number
+
+  pageList: any[]
+  pageTotalCount: number
+}
+```
+
+```ts
+// 状态管理
+import { defineStore } from 'pinia'
+import {
+  postPageListData,
+  deletePageById,
+  editPageListData,
+  newPageData
+} from '@/service/main/system/stytem'
+import type { ISystem } from './type'
+
+export const useSystemStore = defineStore('system', {
+  // 为了完整类型推理，推荐使用箭头函数
+  state: (): ISystem => {
+    return {
+      pageList: [],
+      pageTotalCount: 0
+    }
+  },
+  actions: {
+    async postPageListAction(pageName: string, queryInfo: any) {
+      const pageListResult = await postPageListData(pageName, queryInfo)
+      const { totalCount, list } = pageListResult.data
+      this.pageList = list
+      this.pageTotalCount = totalCount
+    },
+    async deletePageListByIdAction(pageName: string, id: number) {
+      const deleteResult = await deletePageById(pageName, id)
+      this.postPageListAction(pageName, { offset: 0, size: 10 })
+    },
+    async editPageDataAction(pageName: string, id: number, userInfo: any) {
+      const editResult = await editPageListData(pageName, id, userInfo)
+      this.postPageListAction(pageName, { offset: 0, size: 10 })
+    },
+    async newPageListAction(pageName: string, userInfo: any) {
+      const newListResult = await newPageData(pageName, userInfo)
+      this.postPageListAction(pageName, { offset: 0, size: 10 })
+    }
+  }
+})
+```
+
+### 网络请求封装
+
+```ts
+// 网络请求
+import { sjRequest } from '@/service'
+
+export function postPageListData(pageName: string, queryInfo: any) {
+  return sjRequest.post({
+    url: `/${pageName}/list`,
+    data: queryInfo
+  })
+}
+
+export function deletePageById(pageName: string, id: number) {
+  return sjRequest.delete({
+    url: `/${pageName}/${id}`
+  })
+}
+
+export function newPageData(pageName: string, userInfo: any) {
+  return sjRequest.post({
+    url: `/${pageName}`,
+    data: userInfo
+  })
+}
+
+export function editPageListData(pageName: string, id: number, userInfo: any) {
+  return sjRequest.patch({
+    url: `/${pageName}/${id}`,
+    data: userInfo
+  })
+}
+```
+
+### 表格页面
+
+![](https://img.xbin.cn/images/2023/08/30-20-29-47999c.png)
+
+```ts
+// 配置
+const contentConfig = {
+  pageName: 'department',
+  header: {
+    title: '部门列表',
+    btnTitle: '新建部门'
+  },
+  propsList: [
+    {
+      type: 'selection',
+      label: '选择',
+      width: '55px'
+    },
+    {
+      type: 'normal',
+      label: 'ID',
+      prop: 'id',
+      width: '70px'
+    },
+    {
+      type: 'normal',
+      label: '部门名称',
+      prop: 'name',
+      width: '150px'
+    },
+    {
+      type: 'normal',
+      label: '部门领导',
+      prop: 'leader',
+      width: '150px'
+    },
+    {
+      type: 'normal',
+      label: '上级部门',
+      prop: 'parentId',
+      width: '150px'
+    },
+    {
+      type: 'timer',
+      label: '创建时间',
+      prop: 'createAt'
+    },
+    {
+      type: 'timer',
+      label: '更新时间',
+      prop: 'updateAt'
+    },
+    {
+      type: 'btnClick',
+      label: '操作',
+      width: '170px'
+    }
+  ]
+}
+
+export default contentConfig
+```
+
+```ts
+import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useSystemStore } from '@/store/main/system/system'
+import { formatUTC } from '@/utils/formatTime'
+
+interface IProps {
+  contentConfig: {
+    pageName: string
+    header?: {
+      title?: string
+      btnTitle?: string
+    }
+    propsList: any[]
+  }
+}
+const props = defineProps<IProps>()
+
+const emit = defineEmits(['newClick', 'editClick'])
+
+const systemStore = useSystemStore()
+
+const pageSize = ref(10)
+const currentPage = ref(1)
+
+// 获取表格
+const fetchPageListData = (formatData: any = {}) => {
+  const size = pageSize.value
+  const offset = (currentPage.value - 1) * size
+  const info = { size, offset }
+
+  const queryInfo = { ...info, ...formatData }
+  systemStore.postPageListAction(props.contentConfig.pageName, queryInfo)
+}
+fetchPageListData()
+
+const { pageList, pageTotalCount } = storeToRefs(systemStore)
+
+const handleSizeChange = () => {
+  fetchPageListData()
+}
+const handleCurrentChange = () => {
+  fetchPageListData()
+}
+// 新建
+const newBtnClick = () => {
+  emit('newClick')
+}
+// 删除
+const deleteBtnClick = (id: number) => {
+  systemStore.deletePageListByIdAction(props.contentConfig.pageName, id)
+}
+// 修改
+const editBtnClick = (itemData: any) => {
+  emit('editClick', itemData)
+}
+
+defineExpose({ fetchPageListData })
+```
+
+![](https://img.xbin.cn/images/2023/08/30-20-31-aac20e.png)
+
+```html
+<div class="Pagination">
+  <el-pagination
+    v-model:current-page="currentPage"
+    v-model:page-size="pageSize"
+    :page-sizes="[10, 20, 30, 40]"
+    layout="total, sizes, prev, pager, next, jumper"
+    :total="pageTotalCount"
+    @size-change="handleSizeChange"
+    @current-change="handleCurrentChange"
+  />
+</div>
+```
+
+### hooks
+
+```ts
+// 抽取前
+const modelRef = ref<InstanceType<typeof PageModel>>()
+const handleNewClick = () => {
+  modelRef.value?.setModelVisible()
+}
+const handleEditClick = (itemData: any) => {
+  modelRef.value?.setModelVisible(false, itemData)
+}
+```
+
+```ts
+// hooks
+import { ref } from 'vue'
+import type PageModel from '@/components/page-model/page-model.vue'
+
+function usePageModel() {
+  const modelRef = ref<InstanceType<typeof PageModel>>()
+  const handleNewClick = () => {
+    modelRef.value?.setModelVisible()
+  }
+  const handleEditClick = (itemData: any) => {
+    modelRef.value?.setModelVisible(false, itemData)
+  }
+
+  return {
+    modelRef,
+    handleNewClick,
+    handleEditClick
+  }
+}
+export default usePageModel
+```
+
+```ts
+// 抽取后
+const { modelRef, handleEditClick, handleNewClick } = usePageModel()
+```

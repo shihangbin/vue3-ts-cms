@@ -16,16 +16,7 @@ const modelConfig = {
       label: '上级部门',
       prop: 'parentId',
       placeholder: '请输入上级部门',
-      options: [
-        {
-          label: '财务部',
-          value: '111'
-        },
-        {
-          label: '安保部',
-          value: '222'
-        }
-      ]
+      options: []
     },
     {
       type: 'input',

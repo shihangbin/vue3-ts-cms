@@ -1,9 +1,7 @@
 <script lang="ts" setup>
 import { reactive } from 'vue'
 import { ref } from 'vue'
-import { userMainStore } from '@/store/main/main'
 import { useSystemStore } from '@/store/main/system/system'
-import { storeToRefs } from 'pinia'
 
 interface IProps {
   modelConfig: {
@@ -45,8 +43,6 @@ const setModelVisible = (isNew: boolean = true, itemData?: any) => {
   }
 }
 const systemStore = useSystemStore()
-const mainStore = userMainStore()
-const { entireDepartments } = storeToRefs(mainStore)
 
 const newConfirmClick = () => {
   dialogVisible.value = false
@@ -89,7 +85,7 @@ defineExpose({ setModelVisible })
               </template>
               <template v-if="item.type === 'select'">
                 <el-select
-                  v-model="formData[item.parentId]"
+                  v-model="formData[item.prop]"
                   :placeholder="item.placeholder"
                   style="width: 100%"
                 >
