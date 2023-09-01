@@ -16,6 +16,10 @@ const modelConfig = {
       label: '角色名称',
       prop: 'intro',
       placeholder: '请输入角色名称'
+    },
+    {
+      type: 'custom',
+      slotName: 'menulist'
     }
   ]
 }

@@ -12,6 +12,7 @@ interface IProps {
     }
     formItems: any[]
   }
+  otherInfo?: any
 }
 const props = defineProps<IProps>()
 
@@ -46,17 +47,20 @@ const systemStore = useSystemStore()
 
 const newConfirmClick = () => {
   dialogVisible.value = false
+  let infoData = formData
+  if (props.otherInfo) {
+    infoData = { ...infoData, ...props.otherInfo }
+  }
   if (!isNewRef.value && editData.value) {
     // 编辑
     systemStore.editPageDataAction(
       props.modelConfig.pageName,
       editData.value.id,
-      formData
+      infoData
     )
   } else {
     // 新建
-    systemStore.newPageListAction(props.modelConfig.pageName, formData)
-    console.log(formData)
+    systemStore.newPageListAction(props.modelConfig.pageName, infoData)
   }
 }
 
@@ -93,6 +97,9 @@ defineExpose({ setModelVisible })
                     <el-option :label="option.label" :value="option.value" />
                   </template>
                 </el-select>
+              </template>
+              <template v-if="item.type === 'custom'">
+                <slot :name="item.slotName"></slot>
               </template>
             </el-form-item>
           </template>
