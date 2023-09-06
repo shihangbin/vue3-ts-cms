@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
+import { storeToRefs } from 'pinia'
 
 import pageSearch from '@/components/page-search/page-search.vue'
 import pageContent from '@/components/page-content/page-content.vue'
@@ -12,18 +13,28 @@ import modelConfig from './config/model.config'
 
 import usePageModel from '@/hooks/usePageModel'
 import usePageConfig from '@/hooks/usePageConfig'
-import { storeToRefs } from 'pinia'
+import type { ElTree } from 'element-plus'
+import { mapMenuListToIds } from '@/utils/map-menus'
 
 const { contentRef, handleQueryClick, handleResetClick } = usePageConfig()
-const { modelRef, handleEditClick, handleNewClick } = usePageModel()
+const { modelRef, handleEditClick, handleNewClick } = usePageModel(editCallback)
 
 const mainStor = userMainStore()
 const { entireMenus } = storeToRefs(mainStor)
 
 const otherInfo = ref({})
-const handleElTreeCheck = (data1: any, data2: any) => {
-  const menusList = [...data2.checkedKeys, ...data2.halfCheckedKeys]
-  otherInfo.value = { menusList }
+function handleElTreeCheck(data1: any, data2: any) {
+  const menuList = [...data2.checkedKeys, ...data2.halfCheckedKeys]
+  console.log(data2.checkedKeys)
+  otherInfo.value = { menuList }
+}
+
+const treeRef = ref<InstanceType<typeof ElTree>>()
+function editCallback(itemData: any) {
+  nextTick(() => {
+    const menuIds = mapMenuListToIds(itemData.menuList)
+    treeRef.value?.setCheckedKeys(menuIds)
+  })
 }
 </script>
 
@@ -47,14 +58,12 @@ const handleElTreeCheck = (data1: any, data2: any) => {
     >
       <template #menulist>
         <el-tree
+          ref="treeRef"
           :data="entireMenus"
           show-checkbox
           node-key="id"
           highlight-current
-          :props="{
-            children: 'children',
-            label: 'name'
-          }"
+          :props="{ children: 'children', label: 'name' }"
           @check="handleElTreeCheck"
         />
       </template>

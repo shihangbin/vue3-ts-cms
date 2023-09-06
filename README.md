@@ -1789,3 +1789,68 @@ export default usePageModel
 // 抽取后
 const { modelRef, handleEditClick, handleNewClick } = usePageModel()
 ```
+
+### 角色权限回显
+
+![](https://img.xbin.cn/images/2023/09/03-12-33-1d7523.png)
+
+```ts
+// role.vue
+const { modelRef, handleEditClick, handleNewClick } = usePageModel(editCallback)
+const treeRef = ref<InstanceType<typeof ElTree>>()
+function editCallback(itemData: any) {
+  nextTick(() => {
+    const menuIds = mapMenuListToIds(itemData.menuList)
+    treeRef.value?.setCheckedKeys(menuIds)
+  })
+}
+```
+
+```ts
+// utils => map-menus.ts
+/**
+ * 菜单映射到id的列表
+ * @param menuList
+ */
+export function mapMenuListToIds(menuList: any[]) {
+  const ids: number[] = []
+
+  function recuseGetId(menus: any[]) {
+    for (const item of menus) {
+      if (item.children) {
+        recuseGetId(item.children)
+      } else {
+        ids.push(item.id)
+      }
+    }
+  }
+  recuseGetId(menuList)
+
+  return ids
+}
+```
+
+```ts
+// hooks
+import { ref } from 'vue'
+import type PageModel from '@/components/page-model/page-model.vue'
+
+type EditFnType = (data: any) => void
+function usePageModel(editCallback?: EditFnType) {
+  const modelRef = ref<InstanceType<typeof PageModel>>()
+  const handleNewClick = () => {
+    modelRef.value?.setModelVisible()
+  }
+  const handleEditClick = (itemData: any) => {
+    modelRef.value?.setModelVisible(false, itemData)
+    if (editCallback) editCallback(itemData)
+  }
+
+  return {
+    modelRef,
+    handleNewClick,
+    handleEditClick
+  }
+}
+export default usePageModel
+```

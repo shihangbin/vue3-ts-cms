@@ -22,7 +22,7 @@ const editData = ref()
 
 const initialData: any = {}
 for (const item of props.modelConfig.formItems) {
-  initialData[item.prop] = ''
+  initialData[item.prop] = item.initialValue ?? ''
 }
 const formData = reactive<any>(initialData)
 
@@ -38,7 +38,8 @@ const setModelVisible = (isNew: boolean = true, itemData?: any) => {
   } else {
     // 新建
     for (const key in formData) {
-      formData[key] = ''
+      const item = props.modelConfig.formItems.find((item) => item.prop === key)
+      formData[key] = item ? item.initialValue : ''
     }
     editData.value = null
   }
@@ -47,10 +48,12 @@ const systemStore = useSystemStore()
 
 const newConfirmClick = () => {
   dialogVisible.value = false
+
   let infoData = formData
   if (props.otherInfo) {
     infoData = { ...infoData, ...props.otherInfo }
   }
+
   if (!isNewRef.value && editData.value) {
     // 编辑
     systemStore.editPageDataAction(
