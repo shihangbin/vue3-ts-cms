@@ -25,7 +25,6 @@ const { entireMenus } = storeToRefs(mainStor)
 const otherInfo = ref({})
 function handleElTreeCheck(data1: any, data2: any) {
   const menuList = [...data2.checkedKeys, ...data2.halfCheckedKeys]
-  console.log(data2.checkedKeys)
   otherInfo.value = { menuList }
 }
 
